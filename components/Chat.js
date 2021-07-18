@@ -1,14 +1,30 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-
+import { View, Text, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Chat(props) {
-    const { name } = props.route.params;
-    props.navigation.setOptions({ title: name })
+    const navigation = useNavigation();
+    const { name, mycolor } = props.route.params;
+
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            title: name,  // title: name === '' ? 'No title' : name,
+        });
+    }, [navigation, name]);
+
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={[styles.container, { backgroundColor: mycolor }]}>
             <Text>Hello {name}</Text>
         </View>
     )
 
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+});
