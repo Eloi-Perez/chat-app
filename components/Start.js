@@ -15,6 +15,7 @@ export default function Start({ navigation: { navigate } }) {
                     onChangeText={onChangeName}
                     value={name}
                     placeholder="your Name please"
+                        onSubmitEditing={() => navigate('Chat', { name: name, mycolor: mycolor })}
                 />
                 <View style={styles.selectorsview}>
                     <TouchableOpacity
