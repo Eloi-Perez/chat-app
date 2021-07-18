@@ -3,8 +3,8 @@ import { ImageBackground, View, Text, Button, TextInput, StyleSheet, TouchableOp
 
 
 export default function Start({ navigation: { navigate } }) {
-    const [name, onChangeName] = React.useState("");
-    const [mycolor, onChangemycolor] = React.useState("");
+    const [name, setName] = React.useState("");
+    const [mycolor, setMycolor] = React.useState("");
 
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -13,7 +13,7 @@ export default function Start({ navigation: { navigate } }) {
                 <View style={styles.containerInput}>
                     <TextInput
                         style={styles.input}
-                        onChangeText={onChangeName}
+                        onChangeText={setName}
                         value={name}
                         placeholder="your Name please"
                         onSubmitEditing={() => navigate('Chat', { name: name, mycolor: mycolor })}
@@ -23,25 +23,25 @@ export default function Start({ navigation: { navigate } }) {
                         <View style={styles.selectorsContainer}>
                             <TouchableOpacity
                                 style={[styles.selector, { backgroundColor: '#090C08' }]}
-                                onPress={() => onChangemycolor('#090C08')}
+                                onPress={() => setMycolor('#090C08')}
                             />
                         </View>
                         <View style={styles.selectorsContainer}>
                             <TouchableOpacity
                                 style={[styles.selector, { backgroundColor: '#474056' }]}
-                                onPress={() => onChangemycolor('#474056')}
+                                onPress={() => setMycolor('#474056')}
                             />
                         </View>
                         <View style={styles.selectorsContainer}>
                             <TouchableOpacity
                                 style={[styles.selector, { backgroundColor: '#8A95A5' }]}
-                                onPress={() => onChangemycolor('#8A95A5')}
+                                onPress={() => setMycolor('#8A95A5')}
                             />
                         </View>
                         <View style={styles.selectorsContainer}>
                             <TouchableOpacity
                                 style={[styles.selector, { backgroundColor: '#B9C6AE' }]}
-                                onPress={() => onChangemycolor('#B9C6AE')}
+                                onPress={() => setMycolor('#B9C6AE')}
                             />
                         </View>
                     </View>
