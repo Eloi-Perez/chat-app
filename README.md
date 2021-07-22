@@ -1,3 +1,7 @@
 # chat-app
 
-Mobile app developed with React Native & Expo
+Real-Time Mobile Application developed with:
+* React Native
+* Expo
+* Gifted Chat UI
+* Firebase Cloud Firestore
