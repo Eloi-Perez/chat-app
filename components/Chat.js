@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, LogBox } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { GiftedChat, Bubble } from 'react-native-gifted-chat'
+import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat'
 
 import { API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID } from '@env'
 
 LogBox.ignoreLogs(['Setting a timer']);
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
 import firebase from 'firebase/app';
 import 'firebase/firestore';
@@ -24,50 +27,147 @@ if (!firebase.apps.length) {
 }
 const referenceChatMessages = firebase.firestore().collection('messages');
 
+const offlineMsg = {
+    _id: 1,
+    text: 'You are Offline',
+    createdAt: new Date(),
+    system: true,
+}
+
 export default function Chat(props) {
     const navigation = useNavigation();
     const { name, mycolor } = props.route.params;
 
     const [messages, setMessages] = React.useState([]);
-    const [loggedInText, setLoggedInText] = React.useState('Please wait, you are getting logged in');
+    const [loggedInText, setLoggedInText] = React.useState('Welcome');
     const [uid, setUid] = React.useState(0);
-
-    React.useLayoutEffect(() => {
-        navigation.setOptions({
-            title: name,  // title: name === '' ? 'No title' : name, //loggedInText
-        });
-    }, [navigation, name, loggedInText]);
+    const [online, setOnline] = React.useState(false);
 
     React.useEffect(() => {
-        async function firebaseconnection() {
-            try {
-                await firebase.auth().onAuthStateChanged(async (user) => {
-                    if (!user) {
-                        await firebase.auth().signInAnonymously();
-                    }
-                    setUid(user.uid);
-                    setLoggedInText('Hello ' + user.uid);
-                    await referenceChatMessages.orderBy("createdAt", "desc").onSnapshot(querySnapshot => { //.where("uid", "==", user.uid)
-                        const toMessages = [];
-                        querySnapshot.forEach((doc) => {
-                            let data = doc.data();
-                            toMessages.push({
-                                _id: data._id,
-                                text: data.text,
-                                createdAt: data.createdAt.toDate(),
-                                user: data.user,
-                            });
-                        });
-                        setMessages(toMessages);
-                    });
-                });
-            } catch (e) {
-                console.error(e);
+        if (online) {
+            setLoggedInText('Welcome ' + name);
+            removeStatus();
+        } else {
+            setLoggedInText('Welcome ' + name + '  (Offline)');
+            addStatus();
+        }
+    }, [online, name]);
+
+    const addStatus = async () => {
+        try {
+            let msgs = await AsyncStorage.getItem('messages') || [];
+            msgs = JSON.parse(msgs)
+            await msgs.push(offlineMsg);
+            await AsyncStorage.setItem('messages', JSON.stringify(msgs));
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    const removeStatus = async () => {
+        try {
+            let msgs = await AsyncStorage.getItem('messages') || [];
+            msgs = JSON.parse(msgs)
+            let index = msgs.indexOf(offlineMsg);
+            if (index > -1) {
+                msgs.splice(index, 1);
+                await AsyncStorage.setItem('messages', JSON.stringify(msgs));
             }
-        }; firebaseconnection();
-        //stop listening on unmount
-        return () => { firebaseconnection(); }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // loggedInText update
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            title: loggedInText,  // title: name === '' ? 'No title' : name, //loggedInText
+        });
+    }, [navigation, loggedInText]);
+
+    // From Local DB to State
+    const getMessages = async () => {
+        let toMessages = '';
+        let toUid = '';
+        try {
+            toMessages = await AsyncStorage.getItem('messages') || [];
+            setMessages(JSON.parse(toMessages));
+            toUid = await AsyncStorage.getItem('uid');
+            setUid(toUid);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const firestoreConnection = () => firebase.auth().onAuthStateChanged(async (user) => {
+        // let previousText = loggedInText;
+        // setLoggedInText('Loading');
+        // setLoggedInText('Please wait, you are getting logged in')
+        if (!user) { await firebase.auth().signInAnonymously(); }
+        setUid(user.uid);
+        await AsyncStorage.setItem('uid', user.uid);
+        // console.log('this ID: ' + await AsyncStorage.getItem('uid'));                    
+        referenceChatMessages.orderBy("createdAt", "desc").onSnapshot(querySnapshot => {
+            const toMessages = [];
+            querySnapshot.forEach((doc) => {
+                let data = doc.data();
+                toMessages.push({
+                    _id: data._id,
+                    text: data.text,
+                    createdAt: data.createdAt.toDate(),
+                    user: data.user,
+                });
+            });
+            setMessages(toMessages);
+        });
+        // setLoggedInText(previousText);
+    });
+
+    React.useEffect(() => {
+        getMessages();
+        const netStateSubscription = NetInfo.addEventListener(async (netState) => {
+            // console.log("Connection type", netState.type);
+            console.log("Is connected?", netState.isConnected);
+            let isOnline = await netState.isConnected;
+            setOnline(netState.isConnected);
+
+            // if (isOnline !== true) {
+            //     getMessages();
+            //     setLoggedInText('Welcome ' + name + '  (Offline)');
+            // } else {
+            //     firestoreConnection();
+            // };
+            // if (isOnline) { firestoreConnection() }
+        });
+        // stop listening on unmount
+        return () => { netStateSubscription(); }
     }, []); //once
+
+    const onSend = (newMessages = []) => {
+        newMessages.map(msg => referenceChatMessages.add(msg));
+        setMessages((prevMessages) => GiftedChat.append(prevMessages, newMessages));
+    };
+
+    // From State to Local DB
+    const saveMessages = async () => {
+        try {
+            if (messages) { await AsyncStorage.setItem('messages', JSON.stringify(messages)); }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+    React.useEffect(() => { saveMessages() }, [messages]);
+
+    // dev delete local messages
+    const deleteMessages = async () => {
+        try {
+            await AsyncStorage.removeItem('messages');
+            setMessages([])
+        } catch (e) {
+            console.error(e);
+        }
+    };
+    // deleteMessages();
 
     const renderBubble = (props) => (
         <Bubble
@@ -79,7 +179,7 @@ export default function Chat(props) {
             //     right: {},
             // }}
             wrapperStyle={{
-                left: { backgroundColor: '#e6dc6e'},
+                left: { backgroundColor: '#e6dc6e' },
                 right: { backgroundColor: '#6ed6e6' },
             }}
         // bottomContainerStyle={{
@@ -99,9 +199,14 @@ export default function Chat(props) {
         />
     );
 
-    const onSend = (newMessages = []) => {
-        newMessages.map(msg => referenceChatMessages.add(msg));
-        setMessages((prevMessages) => GiftedChat.append(prevMessages, newMessages));
+    const renderInputToolbar = (props) => {
+        if (online) {
+            return (
+                <InputToolbar
+                    {...props}
+                />
+            );
+        }
     };
 
     return (
@@ -114,6 +219,7 @@ export default function Chat(props) {
                 name: name,
             }}
             renderBubble={renderBubble}
+            renderInputToolbar={renderInputToolbar}
         />
         // </View>
     )
