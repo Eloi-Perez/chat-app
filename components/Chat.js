@@ -5,7 +5,8 @@ import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat'
 
 import { API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID } from '@env'
 
-LogBox.ignoreLogs(['Setting a timer']);
+// LogBox.ignoreLogs(['Setting a timer']);
+LogBox.ignoreAllLogs();
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -39,44 +40,26 @@ export default function Chat(props) {
     const { name, mycolor } = props.route.params;
 
     const [messages, setMessages] = React.useState([]);
-    const [loggedInText, setLoggedInText] = React.useState('Welcome');
+    const [loggedInText, setLoggedInText] = React.useState('Welcome ' + name);
     const [uid, setUid] = React.useState(0);
-    const [online, setOnline] = React.useState(false);
+    const [online, setOnline] = React.useState('');
 
+    // system offline message
     React.useEffect(() => {
-        if (online) {
-            setLoggedInText('Welcome ' + name);
-            removeStatus();
-        } else {
-            setLoggedInText('Welcome ' + name + '  (Offline)');
-            addStatus();
-        }
-    }, [online, name]);
-
-    const addStatus = async () => {
-        try {
-            let msgs = await AsyncStorage.getItem('messages') || [];
-            msgs = JSON.parse(msgs)
-            await msgs.push(offlineMsg);
-            await AsyncStorage.setItem('messages', JSON.stringify(msgs));
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    const removeStatus = async () => {
-        try {
-            let msgs = await AsyncStorage.getItem('messages') || [];
-            msgs = JSON.parse(msgs)
-            let index = msgs.indexOf(offlineMsg);
-            if (index > -1) {
+        let msgs = messages;
+        let index = msgs.indexOf(offlineMsg);
+        if (index > -1) {
+            if (online) {
                 msgs.splice(index, 1);
-                await AsyncStorage.setItem('messages', JSON.stringify(msgs));
+                setMessages(msgs);
             }
-        } catch (e) {
-            console.error(e);
+        } else {
+            if (!online) {
+                msgs.unshift(offlineMsg);
+                setMessages(msgs);
+            }
         }
-    }
+    }, [online, messages]);
 
     // loggedInText update
     React.useLayoutEffect(() => {
@@ -100,8 +83,8 @@ export default function Chat(props) {
     };
 
     const firestoreConnection = () => firebase.auth().onAuthStateChanged(async (user) => {
-        // let previousText = loggedInText;
-        // setLoggedInText('Loading');
+        let previousText = loggedInText;
+        setLoggedInText('Loading...');
         // setLoggedInText('Please wait, you are getting logged in')
         if (!user) { await firebase.auth().signInAnonymously(); }
         setUid(user.uid);
@@ -120,7 +103,7 @@ export default function Chat(props) {
             });
             setMessages(toMessages);
         });
-        // setLoggedInText(previousText);
+        setLoggedInText(previousText);
     });
 
     React.useEffect(() => {
@@ -131,13 +114,9 @@ export default function Chat(props) {
             let isOnline = await netState.isConnected;
             setOnline(netState.isConnected);
 
-            // if (isOnline !== true) {
-            //     getMessages();
-            //     setLoggedInText('Welcome ' + name + '  (Offline)');
-            // } else {
-            //     firestoreConnection();
-            // };
-            // if (isOnline) { firestoreConnection() }
+            // if (isOnline !== true) { getMessages(); } else { firestoreConnection(); };
+
+            if (isOnline) { firestoreConnection() }
         });
         // stop listening on unmount
         return () => { netStateSubscription(); }
