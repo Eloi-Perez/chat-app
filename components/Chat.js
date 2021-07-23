@@ -5,8 +5,8 @@ import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat'
 
 import { API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID } from '@env'
 
-// LogBox.ignoreLogs(['Setting a timer']);
-LogBox.ignoreAllLogs();
+LogBox.ignoreLogs(['Setting a timer']);
+// LogBox.ignoreAllLogs();
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -44,6 +44,13 @@ export default function Chat(props) {
     const [uid, setUid] = React.useState(0);
     const [online, setOnline] = React.useState('');
 
+    // title update
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            title: loggedInText,  // title: name === '' ? 'No title' : name, //loggedInText
+        });
+    }, [navigation, loggedInText]);
+
     // system offline message
     React.useEffect(() => {
         let msgs = messages;
@@ -61,13 +68,6 @@ export default function Chat(props) {
         }
     }, [online, messages]);
 
-    // loggedInText update
-    React.useLayoutEffect(() => {
-        navigation.setOptions({
-            title: loggedInText,  // title: name === '' ? 'No title' : name, //loggedInText
-        });
-    }, [navigation, loggedInText]);
-
     // From Local DB to State
     const getMessages = async () => {
         let toMessages = '';
@@ -82,14 +82,23 @@ export default function Chat(props) {
         }
     };
 
+    // From State to Local DB
+    const saveMessages = async () => {
+        try {
+            if (messages) { await AsyncStorage.setItem('messages', JSON.stringify(messages)); }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+    React.useEffect(() => { saveMessages() }, [messages]);
+
+    // firestore listening function
     const firestoreConnection = () => firebase.auth().onAuthStateChanged(async (user) => {
         let previousText = loggedInText;
         setLoggedInText('Loading...');
-        // setLoggedInText('Please wait, you are getting logged in')
         if (!user) { await firebase.auth().signInAnonymously(); }
         setUid(user.uid);
         await AsyncStorage.setItem('uid', user.uid);
-        // console.log('this ID: ' + await AsyncStorage.getItem('uid'));                    
         referenceChatMessages.orderBy("createdAt", "desc").onSnapshot(querySnapshot => {
             const toMessages = [];
             querySnapshot.forEach((doc) => {
@@ -106,36 +115,23 @@ export default function Chat(props) {
         setLoggedInText(previousText);
     });
 
+    // loading messages and online status
     React.useEffect(() => {
         getMessages();
         const netStateSubscription = NetInfo.addEventListener(async (netState) => {
             // console.log("Connection type", netState.type);
             console.log("Is connected?", netState.isConnected);
-            let isOnline = await netState.isConnected;
             setOnline(netState.isConnected);
-
-            // if (isOnline !== true) { getMessages(); } else { firestoreConnection(); };
-
-            if (isOnline) { firestoreConnection() }
+            if (netState.isConnected) { firestoreConnection() }
         });
         // stop listening on unmount
         return () => { netStateSubscription(); }
-    }, []); //once
+    }, []); // once
 
     const onSend = (newMessages = []) => {
         newMessages.map(msg => referenceChatMessages.add(msg));
         setMessages((prevMessages) => GiftedChat.append(prevMessages, newMessages));
     };
-
-    // From State to Local DB
-    const saveMessages = async () => {
-        try {
-            if (messages) { await AsyncStorage.setItem('messages', JSON.stringify(messages)); }
-        } catch (e) {
-            console.error(e);
-        }
-    };
-    React.useEffect(() => { saveMessages() }, [messages]);
 
     // dev delete local messages
     const deleteMessages = async () => {
