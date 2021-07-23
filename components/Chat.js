@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, LogBox } from 'react-native';
+import { LogBox } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat'
 
@@ -15,6 +15,7 @@ import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
 
+// initialize Firebase Firestore
 const firebaseConfig = {
     apiKey: API_KEY,
     authDomain: AUTH_DOMAIN,
@@ -26,6 +27,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
+// select DB Collection
 const referenceChatMessages = firebase.firestore().collection('messages');
 
 const offlineMsg = {
@@ -51,7 +53,7 @@ export default function Chat(props) {
         });
     }, [navigation, loggedInText]);
 
-    // system offline message
+    // load system offline message
     React.useEffect(() => {
         let msgs = messages;
         let index = msgs.indexOf(offlineMsg);
@@ -128,6 +130,7 @@ export default function Chat(props) {
         return () => { netStateSubscription(); }
     }, []); // once
 
+    // input send to firestore + State
     const onSend = (newMessages = []) => {
         newMessages.map(msg => referenceChatMessages.add(msg));
         setMessages((prevMessages) => GiftedChat.append(prevMessages, newMessages));
@@ -144,6 +147,18 @@ export default function Chat(props) {
     };
     // deleteMessages();
 
+    // hide input when offline
+    const renderInputToolbar = (props) => {
+        if (online) {
+            return (
+                <InputToolbar
+                    {...props}
+                />
+            );
+        }
+    };
+
+    //GiftedChat styles
     const renderBubble = (props) => (
         <Bubble
             {...props}
@@ -174,18 +189,7 @@ export default function Chat(props) {
         />
     );
 
-    const renderInputToolbar = (props) => {
-        if (online) {
-            return (
-                <InputToolbar
-                    {...props}
-                />
-            );
-        }
-    };
-
     return (
-        // <View style={[styles.container, { backgroundColor: mycolor }]}>
         <GiftedChat
             messages={messages}
             onSend={onSend}
@@ -197,15 +201,6 @@ export default function Chat(props) {
             renderInputToolbar={renderInputToolbar}
             messagesContainerStyle={{ backgroundColor: mycolor }}
         />
-        // </View>
     )
 
 }
-
-// const styles = StyleSheet.create({
-//     container: {
-//         flex: 1,
-//         justifyContent: 'center',
-//         alignItems: 'center',
-//     },
-// });
