@@ -42,7 +42,7 @@ export default function Chat(props) {
     const [messages, setMessages] = React.useState([]);
     const [loggedInText, setLoggedInText] = React.useState('Welcome ' + name);
     const [uid, setUid] = React.useState(0);
-    const [online, setOnline] = React.useState('');
+    const [online, setOnline] = React.useState(true);
 
     // title update
     React.useLayoutEffect(() => {
@@ -195,16 +195,17 @@ export default function Chat(props) {
             }}
             renderBubble={renderBubble}
             renderInputToolbar={renderInputToolbar}
+            messagesContainerStyle={{ backgroundColor: mycolor }}
         />
         // </View>
     )
 
 }
 
-const styles = StyleSheet.create({
-    // container: {
-    //     flex: 1,
-    //     justifyContent: 'center',
-    //     alignItems: 'center',
-    // },
-});
+// const styles = StyleSheet.create({
+//     container: {
+//         flex: 1,
+//         justifyContent: 'center',
+//         alignItems: 'center',
+//     },
+// });
