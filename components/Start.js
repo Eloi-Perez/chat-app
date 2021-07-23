@@ -15,7 +15,7 @@ export default function Start({ navigation: { navigate } }) {
                         style={styles.input}
                         onChangeText={setName}
                         value={name}
-                        placeholder="your Name please"
+                        placeholder="enter your name please"
                         onSubmitEditing={() => navigate('Chat', { name: name, mycolor: mycolor })}
                     />
                     <Text style={styles.selectorText}>Choose your background colour</Text>
