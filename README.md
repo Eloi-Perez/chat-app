@@ -17,3 +17,8 @@ Real-Time Mobile Application developed with:
 * useState, AsyncStorage and Firestore synchronization
 * When offline show status and disable input
 * When back online, synchronise with remote DB
+* Sharing location
+* Sharing image from gallery or camera
+
+### Other tools used:
+* Android Studio virtual devices
