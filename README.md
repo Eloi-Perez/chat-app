@@ -1,6 +1,8 @@
 # chat-app
 
-Real-Time Mobile Application developed with:
+A React Native mobile application that give users the oportunity to chat, share pictures and location.
+
+## Technologies used:
 * React Native
 * Expo
 * Gifted Chat UI
