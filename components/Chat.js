@@ -2,18 +2,13 @@ import React from 'react';
 import { LogBox, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat'
-import Lightbox from 'react-native-lightbox-v2';
 import 'react-native-get-random-values'
 import { v4 as uuidv4 } from 'uuid';
 
 import { API_KEY, PROJECT_ID, MESSAGING_SENDER_ID, APP_ID } from '@env'
-// import firebase from 'firebase/app';
-// import 'firebase/firestore';
-// import 'firebase/auth';
-import firebase from 'firebase/compat/app';
-// import 'firebase/compat/auth';
-import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-import 'firebase/compat/firestore';
+import firebase from 'firebase/app';
+import 'firebase/firestore';
+import 'firebase/auth';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -80,7 +75,7 @@ export default function Chat(props) {
         }
     }, [online, messages]);
 
-    // From Local DB to State
+    // data from Local DB to State
     const getMessages = async () => {
         let toMessages = '';
         let toUid = '';
@@ -94,7 +89,7 @@ export default function Chat(props) {
         }
     };
 
-    // From State to Local DB
+    // messages from State to Local DB
     const saveMessages = async () => {
         try {
             if (messages) { await AsyncStorage.setItem('messages', JSON.stringify(messages)); }
@@ -104,52 +99,46 @@ export default function Chat(props) {
     };
     React.useEffect(() => { saveMessages() }, [messages]);
 
-    // firestore listening function
-    const firestoreConnection = async () => {
-        const auth = getAuth();
-        signInAnonymously(auth)
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                let previousText = loggedInText;
-                setLoggedInText('Loading...');
-                setUid(user.uid);
-                await AsyncStorage.setItem('uid', user.uid);
-                referenceChatMessages.orderBy("createdAt", "desc").onSnapshot(querySnapshot => {
-                    const toMessages = [];
-                    querySnapshot.forEach((doc) => {
-                        let data = doc.data();
-                        toMessages.push({
-                            _id: data._id,
-                            text: data.text || null,
-                            createdAt: data.createdAt.toDate(),
-                            user: {
-                                _id: data.user._id,
-                                name: data.user.name,
-                                avatar: data.user.avatar || null,
-                            },
-                            image: data.image || null,
-                            location: data.location || null,
-                        });
-                    });
-                    setMessages(toMessages);
+    // firestore listening & store ID auth
+    const firestoreConnection = () => firebase.auth().onAuthStateChanged(async (user) => {
+        let previousText = loggedInText;
+        setLoggedInText('Loading...');
+        if (!user) { await firebase.auth().signInAnonymously(); }
+        setUid(user.uid);
+        await AsyncStorage.setItem('uid', user.uid);
+        referenceChatMessages.orderBy("createdAt", "desc").onSnapshot(querySnapshot => {
+            const toMessages = [];
+            querySnapshot.forEach((doc) => {
+                let data = doc.data();
+                toMessages.push({
+                    _id: data._id,
+                    text: data.text || null,
+                    createdAt: data.createdAt.toDate(),
+                    user: {
+                        _id: data.user._id,
+                        name: data.user.name,
+                        avatar: data.user.avatar || null,
+                    },
+                    image: data.image || null,
+                    location: data.location || null,
                 });
-                setLoggedInText(previousText);
-            }
+            });
+            setMessages(toMessages);
         });
-    }
+        setLoggedInText(previousText);
+    });
+
 
     // loading messages and online status
     React.useEffect(() => {
         getMessages();
         const netStateSubscription = NetInfo.addEventListener(async (netState) => {
-            // console.log("Connection type", netState.type);
-            console.log("Is connected?", netState.isConnected);
             setOnline(netState.isConnected);
             if (netState.isConnected) { firestoreConnection() }
         });
         // stop listening on unmount
         return () => { netStateSubscription(); console.log('unmounted NetInfo'); }
-    }, []); // once
+    }, []);
 
     // input send to firestore + State
     const onSend = (newMessages = []) => {
@@ -179,7 +168,7 @@ export default function Chat(props) {
         }
     };
 
-    //GiftedChat styles
+    // GiftedChat styles
     const renderBubble = (props) => (
         <Bubble
             {...props}
@@ -229,12 +218,6 @@ export default function Chat(props) {
             }
         })
         onSend(messagesToUpload)
-        // const messagesToUpload = messages.map(message => ({
-        //     ...message,
-        //     user,
-        //     createdAt,
-        //     _id: Math.round(Math.random() * 1000000),
-        // }))
     }
     const renderCustomActions = props =>
         Platform.OS === 'web' ? null : (
@@ -287,7 +270,6 @@ export default function Chat(props) {
             renderActions={renderCustomActions}
             renderCustomView={renderCustomView}
             messageIdGenerator={uuidv4}
-        // renderUsernameOnMessage={true}
         />
     )
 
