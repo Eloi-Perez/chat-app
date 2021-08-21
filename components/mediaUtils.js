@@ -1,4 +1,3 @@
-// import * as Linking from 'expo-linking';
 import { Linking } from 'expo'
 import * as Location from 'expo-location'
 import * as ImagePicker from 'expo-image-picker'
@@ -68,7 +67,7 @@ export async function takePictureAsync(onSend) {
     if (await getPermissionAsync('camera')) {
         const result = await ImagePicker.launchCameraAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            // allowsEditing: true,
+            allowsEditing: true,
             // aspect: [4, 3],
         })
 
