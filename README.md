@@ -1,6 +1,6 @@
 # chat-app
 
-A React Native mobile application that give users the oportunity to chat, share pictures and location.
+A React Native mobile application that gives users the opportunity to chat, share pictures and locations.
 
 <img alt="chat-app" src="https://github.com/Eloi-Perez/chat-app/blob/assets/chat-app.gif" height="600" />
 
