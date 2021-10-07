@@ -15,7 +15,7 @@ A React Native mobile application that gives users the opportunity to chat, shar
 ## Features:
 * Chat room
 * Personalize background & name
-* Anonymous authenification (assign and store users ID)
+* Anonymous authentication (assign and store user's ID)
 * Remote DB (Firestore Database)
 * Local DB for offline viewing (AsyncStorage)
 * useState, AsyncStorage and Firestore synchronization
