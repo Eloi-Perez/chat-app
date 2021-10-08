@@ -21,8 +21,8 @@ A React Native mobile application that gives users the opportunity to chat, shar
 * useState, AsyncStorage and Firestore synchronization
 * When offline show status and disable input
 * When back online, synchronise with remote DB
-* Sharing location
-* Sharing image from gallery or camera
+* Sharing locations
+* Sharing images from gallery or camera
 
 ### Other tools used:
 * Android Studio virtual devices
